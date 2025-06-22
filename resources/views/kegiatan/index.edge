@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daftar Kegiatan</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; }
+    .sidebar { width: 250px; height: 100vh; position: fixed; background-color: #f0f2f5; }
+    .content { margin-left: 250px; padding: 2rem; }
+    .sidebar .nav-link.active {
+      font-weight: bold;
+      background-color: #0d6efd !important;
+      color: white !important;
+      border-radius: 0.375rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar d-flex flex-column p-3 border-end">
+    <h4 class="mb-4">Manajegiatan</h4>
+    <ul class="nav nav-pills flex-column">
+      <li class="nav-item"><a href="/" class="nav-link">Dashboard</a></li>
+      <li class="nav-item"><a href="/laporan" class="nav-link {{ currentUrl == '/laporan' ? 'active text-white' : '' }}">Laporan</a></li>
+      <li class="nav-item"><a href="/kegiatan" class="nav-link active">Kegiatan</a></li>
+      <li class="nav-item"><a href="/anggota" class="nav-link">Anggota</a></li>
+      <li class="nav-item"><a href="/organisasi" class="nav-link">Organisasi</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2>Daftar Kegiatan</h2>
+      <a href="/kegiatan/create" class="btn btn-primary">Tambah Kegiatan</a>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body p-0">
+        <table class="table mb-0 table-bordered bg-white">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th> <th>Nama</th>
+              <th>Penyelenggara</th>
+              <th>Lokasi</th>
+              <th>Tanggal</th>
+              <th class="text-end">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @each(item in kegiatan)
+              <tr id="kegiatan-row-{{ item.id }}">
+                <td>{{ item.id }}</td>
+                <td data-field="nama">{{ item.nama }}</td>
+                <td data-field="organisasi">{{ item.organisasi?.nama_organisasi || '-' }}</td>
+                <td data-field="lokasi">{{ item.lokasi?.nama_lokasi || '-' }}</td>
+                <td data-field="tanggal">{{ item.tglPelaksanaan }}</td> <td class="text-end">
+                  <a href="/kegiatan/{{ item.id }}/edit" class="btn btn-sm btn-warning me-2">Edit</a>
+                  <a href="/kegiatan/{{ item.id }}/panitia" class="btn btn-sm btn-info me-2">Panitia</a> <form class="d-inline delete-kegiatan-form" data-id="{{ item.id }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                  </form>
+                </td>
+              </tr>
+            @else
+              <tr><td colspan="6" class="text-center">Belum ada kegiatan.</td></tr>
+            @endeach
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.delete-kegiatan-form').forEach(form => {
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          
+          const kegiatanId = form.dataset.id;
+          if (!confirm(`Apakah Anda yakin ingin menghapus kegiatan dengan ID ${kegiatanId}?`)) {
+            return;
+          }
+
+          const csrfToken = form.querySelector('input[name="_csrf"]').value;
+
+          try {
+            const response = await fetch(`/kegiatan/${kegiatanId}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+              },
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+              const rowToRemove = document.getElementById(`kegiatan-row-${result.id}`);
+              if (rowToRemove) {
+                rowToRemove.remove();
+                alert(result.message);
+                const tbody = document.querySelector('.table tbody');
+                if (tbody && tbody.children.length === 0) {
+                  const noDataRow = document.createElement('tr');
+                  noDataRow.innerHTML = '<td colspan="6" class="text-center">Belum ada kegiatan.</td>';
+                  tbody.appendChild(noDataRow);
+                }
+              }
+            } else {
+              alert(`Gagal menghapus kegiatan: ${result.message || 'Terjadi kesalahan'}`);
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghubungi server.');
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

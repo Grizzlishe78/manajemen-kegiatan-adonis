@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Laporan Kegiatan</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; }
+    .sidebar { width: 250px; height: 100vh; position: fixed; background-color: #f0f2f5; }
+    .content { margin-left: 250px; padding: 2rem; }
+    .sidebar .nav-link.active {
+      font-weight: bold;
+      background-color: #0d6efd !important;
+      color: white !important;
+      border-radius: 0.375rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar d-flex flex-column p-3 border-end">
+    <h4 class="mb-4">Manajegiatan</h4>
+    <ul class="nav nav-pills flex-column">
+      <li class="nav-item"><a href="/" class="nav-link">Dashboard</a></li>
+      <li class="nav-item"><a href="/laporan" class="nav-link active">Laporan</a></li>
+      <li class="nav-item"><a href="/kegiatan" class="nav-link">Kegiatan</a></li>
+      <li class="nav-item"><a href="/anggota" class="nav-link">Anggota</a></li>
+      <li class="nav-item"><a href="/organisasi" class="nav-link">Organisasi</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <h2 class="mb-4">Laporan Kegiatan</h2>
+
+    <form method="GET" action="/laporan" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <input type="text" name="search" value="{{ search || '' }}" class="form-control" placeholder="Cari kegiatan atau lokasi..." />
+      </div>
+      <div class="col-md-3">
+        <select name="organisasi_id" class="form-select">
+          <option value="">Semua Organisasi</option>
+          @each(org in organisasi)
+            <option value="{{ org.id }}" {{ organisasiId == org.id ? 'selected' : '' }}>
+              {{ org.nama_organisasi }}
+            </option>
+          @endeach
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select name="lokasi_id" class="form-select">
+          <option value="">Semua Lokasi</option>
+          @each(lok in lokasi)
+            <option value="{{ lok.id }}" {{ lokasiId == lok.id ? 'selected' : '' }}>
+              {{ lok.nama_lokasi }}
+            </option>
+          @endeach
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="card-body p-0">
+        <table class="table mb-0 table-bordered bg-white">
+          <thead class="table-light">
+            <tr>
+              <th>Nama Kegiatan</th>
+              <th>Penyelenggara</th>
+              <th>Lokasi</th>
+              <th>Tanggal</th>
+              <th>Jumlah Panitia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @each(item in kegiatan)
+              <tr>
+                <td>{{ item.nama }}</td>
+                <td>{{ item.organisasi?.nama_organisasi || '-' }}</td>
+                <td>{{ item.lokasi?.nama_lokasi || '-' }}</td>
+                <td>{{ item.tglPelaksanaan }}</td>
+                <td><span class="badge text-bg-primary">{{ item.kepanitiaan.length }}</span></td>
+              </tr>
+            @else
+              <tr><td colspan="5" class="text-center">Tidak ada data ditemukan.</td></tr>
+            @endeach
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

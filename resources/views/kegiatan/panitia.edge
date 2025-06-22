@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daftar Panitia Kegiatan: {{ kegiatan.nama }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; }
+    .sidebar { width: 250px; height: 100vh; position: fixed; background-color: #f0f2f5; }
+    .content { margin-left: 250px; padding: 2rem; }
+    .sidebar .nav-link.active {
+      font-weight: bold;
+      background-color: #0d6efd !important;
+      color: white !important;
+      border-radius: 0.375rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar d-flex flex-column p-3 border-end">
+    <h4 class="mb-4">Manajegiatan</h4>
+    <ul class="nav nav-pills flex-column">
+      <li class="nav-item"><a href="/" class="nav-link">Dashboard</a></li>
+      <li class="nav-item"><a href="/laporan" class="nav-link">Laporan</a></li>
+      <li class="nav-item"><a href="/kegiatan" class="nav-link active">Kegiatan</a></li>
+      <li class="nav-item"><a href="/anggota" class="nav-link">Anggota</a></li>
+      <li class="nav-item"><a href="/organisasi" class="nav-link">Organisasi</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2>Panitia Kegiatan: {{ kegiatan.nama }}</h2>
+      <a href="/kegiatan" class="btn btn-secondary">Kembali ke Daftar Kegiatan</a>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5>Tambah Anggota Panitia</h5>
+      </div>
+      <div class="card-body">
+        <form id="add-panitia-form" action="/kegiatan/{{ kegiatan.id }}/panitia" method="POST">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="kegiatan_id" value="{{ kegiatan.id }}">
+
+          <div class="mb-3">
+            <label for="anggota_id" class="form-label">Pilih Anggota</label>
+            <select name="anggota_id" id="anggota_id" class="form-select" required>
+              <option value="">Pilih Anggota</option>
+              @each(anggotaItem in anggota)
+                <option value="{{ anggotaItem.id }}">{{ anggotaItem.nama }} ({{ anggotaItem.nim }})</option>
+              @else
+                <option value="" disabled>Tidak ada anggota yang tersedia untuk ditambahkan.</option>
+              @endeach
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="jabatan" class="form-label">Jabatan</label>
+            <input type="text" name="jabatan" id="jabatan" class="form-control" placeholder="Contoh: Ketua, Sekretaris, Anggota Divisi" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Tambah Panitia</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h5>Daftar Panitia</h5>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0 table-bordered bg-white">
+          <thead class="table-light">
+            <tr>
+              <th>Nama Anggota</th>
+              <th>NIM</th> <th>Jabatan</th>
+              <th class="text-end">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="panitia-list-body">
+            @each(panitiaItem in kegiatan.kepanitiaan)
+              <tr id="panitia-row-{{ panitiaItem.id }}">
+                <td>{{ panitiaItem.anggota?.nama || '-' }}</td>
+                <td>{{ panitiaItem.anggota?.nim || '-' }}</td> <td>{{ panitiaItem.jabatan }}</td>
+                <td class="text-end">
+                  <form class="d-inline delete-panitia-form" data-id="{{ panitiaItem.id }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                  </form>
+                </td>
+              </tr>
+            @else
+              <tr><td colspan="4" class="text-center">Belum ada anggota panitia untuk kegiatan ini.</td></tr>
+            @endeach
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const panitiaListBody = document.getElementById('panitia-list-body');
+      const addPanitiaForm = document.getElementById('add-panitia-form');
+      const anggotaSelect = document.getElementById('anggota_id');
+
+      function addPanitiaRow(panitia) {
+        const newRow = document.createElement('tr');
+        newRow.id = `panitia-row-${panitia.id}`;
+        newRow.innerHTML = `
+          <td>${panitia.anggota_nama}</td>
+          <td>${panitia.anggota_nim}</td>
+          <td>${panitia.jabatan}</td>
+          <td class="text-end">
+            <form class="d-inline delete-panitia-form" data-id="${panitia.id}">
+              <input type="hidden" name="_method" value="DELETE">
+              <input type="hidden" name="_csrf" value="${document.querySelector('input[name="_csrf"]').value}">
+              <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+            </form>
+          </td>
+        `;
+        const noPanitiaRow = panitiaListBody.querySelector('tr td[colspan="4"]');
+        if (noPanitiaRow) {
+          noPanitiaRow.closest('tr').remove();
+        }
+        panitiaListBody.appendChild(newRow);
+        attachDeletePanitiaListeners(); 
+      }
+
+      function attachDeletePanitiaListeners() {
+        document.querySelectorAll('.delete-panitia-form').forEach(form => {
+          form.removeEventListener('submit', handleDeletePanitia); 
+          form.addEventListener('submit', handleDeletePanitia);
+        });
+      }
+
+      async function handleDeletePanitia(event) {
+        event.preventDefault();
+        const panitiaId = this.dataset.id;
+        if (!confirm(`Apakah Anda yakin ingin menghapus panitia dengan ID ${panitiaId}?`)) {
+          return;
+        }
+
+        const csrfToken = this.querySelector('input[name="_csrf"]').value;
+
+        try {
+          const response = await fetch(`/panitia/${panitiaId}`, { 
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrfToken,
+              'Accept': 'application/json'
+            },
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            const rowToRemove = document.getElementById(`panitia-row-${result.id}`);
+            if (rowToRemove) {
+              const deletedAnggotaId = rowToRemove.querySelector('.delete-panitia-form').dataset.id; 
+              
+              alert(result.message);
+              window.location.reload(); 
+            }
+          } else {
+            alert(`Gagal menghapus panitia: ${result.message || 'Terjadi kesalahan'}`);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Terjadi kesalahan saat menghubungi server.');
+        }
+      }
+
+      attachDeletePanitiaListeners();
+
+      if (addPanitiaForm) {
+        addPanitiaForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const formData = new FormData(addPanitiaForm);
+          const data = {};
+          for (let [key, value] of formData.entries()) {
+            if (key !== '_csrf') {
+              data[key] = value;
+            }
+          }
+
+          const csrfToken = addPanitiaForm.querySelector('input[name="_csrf"]').value;
+
+          try {
+            const response = await fetch(`/kegiatan/{{ kegiatan.id }}/panitia`, { 
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+              alert(result.message);
+              addPanitiaRow(result.kepanitiaan);
+
+              const anggotaIdBaru = result.kepanitiaan.anggota_id;
+              const optionToRemove = anggotaSelect.querySelector(`option[value="${anggotaIdBaru}"]`);
+              if (optionToRemove) {
+                optionToRemove.remove();
+              }
+              anggotaSelect.value = ''; 
+
+              document.getElementById('jabatan').value = ''; 
+            } else {
+              alert(`Gagal menambahkan panitia: ${result.message || 'Terjadi kesalahan'}`);
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghubungi server.');
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

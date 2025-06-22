@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body { background-color: #f8f9fa; }
+      .sidebar { width: 250px; height: 100vh; position: fixed; background-color: #f0f2f5; }
+      .content { margin-left: 250px; padding: 2rem; }
+      .sidebar .nav-link.active {
+        font-weight: bold;
+        background-color: #0d6efd !important;
+        color: white !important;
+        border-radius: 0.375rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar d-flex flex-column p-3 border-end">
+      <h4 class="mb-4">Manajegiatan</h4>
+      <ul class="nav nav-pills flex-column">
+        <li class="nav-item"><a href="/" class="nav-link active">Dashboard</a></li>
+        <li class="nav-item"><a href="/laporan" class="nav-link">Laporan</a></li>
+        <li class="nav-item"><a href="/kegiatan" class="nav-link">Kegiatan</a></li>
+        <li class="nav-item"><a href="/anggota" class="nav-link">Anggota</a></li>
+        <li class="nav-item"><a href="/organisasi" class="nav-link">Organisasi</a></li>
+      </ul>
+    </div>
+
+    <div class="content">
+      <h1 class="mb-4">Dashboard</h1>
+
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="bg-white p-4 rounded shadow-sm">
+            <p class="text-muted">Total Kegiatan</p>
+            <h2 class="fw-bold">{{ totalKegiatan }}</h2>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="bg-white p-4 rounded shadow-sm">
+            <p class="text-muted">Total Anggota</p>
+            <h2 class="fw-bold">{{ totalAnggota }}</h2>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="bg-white p-4 rounded shadow-sm">
+            <p class="text-muted">Organisasi Terdaftar</p>
+            <h2 class="fw-bold">{{ totalOrganisasi }}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded shadow-sm p-4">
+        <h2 class="h5 mb-4">Laporan Kegiatan Terbaru</h2>
+        <form action="/laporan" method="GET" class="d-flex gap-2 mb-3">
+          <input type="text" name="search" class="form-control" placeholder="Cari nama kegiatan atau lokasi..." value="{{ request.input('search', '') }}">
+          <select name="organisasi" class="form-select">
+            <option value="">Semua Organisasi</option>
+            @each(org in organisasis)
+              <option value="{{ org.id }}" {{ request.input('organisasi') == org.id ? 'selected' : '' }}>{{ org.nama_organisasi }}</option>
+            @endeach
+          </select>
+          <select name="lokasi" class="form-select">
+            <option value="">Semua Lokasi</option>
+            @each(loc in lokasis)
+              <option value="{{ loc.id }}" {{ request.input('lokasi') == loc.id ? 'selected' : '' }}>{{ loc.nama_lokasi }}</option>
+            @endeach
+          </select>
+          <button type="submit" class="btn btn-primary">Filter</button>
+          <a href="/laporan" class="btn btn-secondary">Reset</a>
+        </form>
+
+
+        <table class="table table-bordered">
+          <thead class="table-light">
+            <tr>
+              <th>Nama Kegiatan</th>
+              <th>Penyelenggara</th>
+              <th>Lokasi</th>
+              <th>Tgl Pelaksanaan</th>
+              <th>Jumlah Panitia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @each(item in kegiatanLaporan)
+            <tr>
+              <td>{{ item.nama }}</td>
+              <td>{{ item.organisasi?.nama_organisasi || '-' }}</td>
+              <td>{{ item.lokasi?.nama_lokasi || '-' }}</td>
+              <td>{{ item.tglPelaksanaan.toFormat('dd MMM yyyy') }}</td> <td><span class="badge text-bg-primary">{{ item.kepanitiaan.length }}</span></td>
+            </tr>
+            @else
+            <tr><td colspan="5" class="text-center">Belum ada kegiatan terbaru.</td></tr>
+            @endeach
+          </tbody>
+        </table>
+        <div class="text-end">
+          <a href="/laporan" class="btn btn-link">Lihat Semua Laporan</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
